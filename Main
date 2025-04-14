@@ -1,0 +1,127 @@
+package Cart_and_Soul;
+
+import java.sql.*;
+import java.util.Scanner;
+
+public class Cart_and_Soul_DB {
+
+    public static void main(String[] args) {
+        Scanner scnr = new Scanner(System.in);
+        String url = "jdbc:mysql://localhost:3306/Cart_and_Soul";
+        String username = "root";
+        String password = "";
+
+        while (true) {
+            System.out.println("Select a category:");
+            System.out.println("1. Produce");
+            System.out.println("2. Bath");
+            System.out.println("3. Electronics");
+            System.out.println("4. Dairy");
+            System.out.println("5. Clothing");
+            System.out.println("6. Exit");
+            System.out.print("Enter your choice (1-6): ");
+            int choice = scnr.nextInt();
+
+            if (choice == 6) {
+                System.out.println("Exiting...");
+                break;
+            }
+
+            String category = "";
+            if (choice == 1) category = "Produce";
+            else if (choice == 2) category = "Bath";
+            else if (choice == 3) category = "Electronics";
+            else if (choice == 4) category = "Dairy";
+            else if (choice == 5) category = "Clothing";
+
+            displayItems(category, url, username, password);
+
+            System.out.println("Do you want to modify any values? (yes/no): ");
+            String modifyChoice = scnr.next();
+
+            if (modifyChoice.equalsIgnoreCase("yes")) {
+                modifyItem(category, url, username, password);
+            }
+        }
+        
+        scnr.close();
+    }
+
+    public static void displayItems(String category, String url, String username, String password) {
+        String query = "SELECT * FROM Fruits WHERE category = '" + category + "'";
+
+        try (Connection con = DriverManager.getConnection(url, username, password);
+             Statement st = con.createStatement();
+             ResultSet rs = st.executeQuery(query)) {
+
+            System.out.println("\n+----+----------------------+----------+--------+");
+            System.out.println("| ID | Name                 | Quantity | Price  |");
+            System.out.println("+----+----------------------+----------+--------+");
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                int quantity = rs.getInt("quantity");
+                double price = rs.getDouble("price");
+
+                System.out.format("| %-2d | %-20s | %-8d | %-6.2f |\n", id, name, quantity, price);
+            }
+
+            System.out.println("+----+----------------------+----------+--------+");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void modifyItem(String category, String url, String username, String password) {
+        Scanner scnr = new Scanner(System.in);
+
+        System.out.print("Enter the ID of the item you want to modify: ");
+        int itemId = scnr.nextInt();
+
+        System.out.println("Which value would you like to modify?");
+        System.out.println("1. Quantity");
+        System.out.println("2. Price");
+        System.out.println("Enter your choice (1-2): ");
+        int modifyChoice = scnr.nextInt();
+        
+        int newQuantity = 0;
+        double newPrice = 0.0;
+        
+        try (Connection con = DriverManager.getConnection(url, username, password)) {
+            if (modifyChoice == 1) {
+                System.out.print("Enter the new quantity: ");
+                newQuantity = scnr.nextInt();
+                String updateQuery = "UPDATE Fruits SET quantity = ? WHERE id = ?";
+                try (PreparedStatement pstmt = con.prepareStatement(updateQuery)) {
+                    pstmt.setInt(1, newQuantity);
+                    pstmt.setInt(2, itemId);
+                    int rowsAffected = pstmt.executeUpdate();
+                    if (rowsAffected > 0) {
+                        System.out.println("Quantity updated successfully!");
+                    } else {
+                        System.out.println("Item not found or no changes made.");
+                    }
+                }
+            } else if (modifyChoice == 2) {
+                System.out.print("Enter the new price: ");
+                newPrice = scnr.nextDouble();
+                String updateQuery = "UPDATE Fruits SET price = ? WHERE id = ?";
+                try (PreparedStatement pstmt = con.prepareStatement(updateQuery)) {
+                    pstmt.setDouble(1, newPrice);
+                    pstmt.setInt(2, itemId);
+                    int rowsAffected = pstmt.executeUpdate();
+                    if (rowsAffected > 0) {
+                        System.out.println("Price updated successfully!");
+                    } else {
+                        System.out.println("Item not found or no changes made.");
+                    }
+                }
+            } else {
+                System.out.println("Invalid choice for modification.");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
